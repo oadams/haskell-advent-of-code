@@ -4,7 +4,6 @@ import Data.Char (intToDigit)
 import Data.List (nub)
 import Data.List.Split (splitOneOf)
 import Text.Read (readMaybe)
-import Debug.Trace
 
 import Paths_aoc2023 (getDataFileName)
 
