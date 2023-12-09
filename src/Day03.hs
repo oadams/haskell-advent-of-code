@@ -40,14 +40,14 @@ hasPartInRow partNumber symbols row = hasPart' (zip [0..] row)
         | c `elem` symbols && i >= offset partNumber - 1 && i <= offset partNumber + (length . show . number) partNumber = True
         | otherwise = hasPart' xs
 
-getRowGroups :: [String] -> [[String]]
+getRowGroups :: [a] -> [[a]]
 getRowGroups rows = makeListFrom start mid end
   where
-    mid = zip3 (rows) (drop 1 rows) (drop 2 rows)
+    mid = zip3 rows (drop 1 rows) (drop 2 rows)
     start = zip (take 1 rows) (drop 1 rows)
     end = zip (drop (length rows - 1) rows) (drop (length rows - 2) rows)
 
-makeListFrom :: [(String, String)] -> [(String, String, String)] -> [(String, String)] -> [[String]]
+makeListFrom :: [(a, a)] -> [(a, a, a)] -> [(a, a)] -> [[a]]
 makeListFrom start mid end = newStart ++ newMid ++ newEnd
     where
     newMid = map (\(x, y, z) -> [x, y, z]) mid
@@ -60,13 +60,39 @@ hasPartInRowGroup symbols rowGroup partNumber = any (hasPartInRow partNumber sym
 partsInRowGroup :: String -> [String] -> [PartNumber] -> [PartNumber]
 partsInRowGroup symbols rowGroup partNumbers = filter (hasPartInRowGroup symbols rowGroup) partNumbers
 
+gearRatio :: [PartNumber] -> Gear  -> Int
+gearRatio partNumbers gear 
+    | length adjacentPartNumbers == 2 = product [number x | x <- adjacentPartNumbers]
+    | otherwise = 0
+    where 
+        adjacentPartNumbers = filter isAdjacent partNumbers
+        isAdjacent :: PartNumber -> Bool
+        isAdjacent partNumber = gearOffset gear >= offset partNumber - 1 && gearOffset gear <= offset partNumber + (length . show . number) partNumber
+
+newtype Gear = Gear { gearOffset :: Int } deriving Show
+
+getGears :: String -> [Gear]
+getGears row = getGears' 0 row
+  where
+    getGears' :: Int -> String -> [Gear]
+    getGears' _ [] = []
+    getGears' acc (x:xs)
+        | x == '*' = Gear {gearOffset = acc} : getGears' (acc + 1) xs
+        | otherwise = getGears' (acc + 1) xs
+
+-- gearRatios :: Gear -> [PartNumber] -> [Int]
+-- gearRatios [] partNumbers = []
+--gearRatios (x:xs) partNumbers = 
+
 day03 :: IO ()
 day03 = do
   inputLines <- lines <$> (getDataFileName "day03-input.txt" >>= readFile)
   let symbols = getSymbols $ unlines inputLines
-  let partNumbers = map (getPartNumbers (symbols ++ ".")) inputLines
-  let rowGroups = getRowGroups inputLines
-  print partNumbers
-  print rowGroups
-  let validParts = concat $ [partsInRowGroup symbols rowGroup rowPartNumbers | (rowGroup, rowPartNumbers) <- zip rowGroups partNumbers]
-  print $ sum [number x | x <- validParts]
+  let partNumberGroups = map concat $ getRowGroups $ map (getPartNumbers (symbols ++ ".")) inputLines
+  let gears = map getGears inputLines
+  -- let rowGroups = getRowGroups inputLines
+  print partNumberGroups
+  print gears
+  print $ sum $ concat [map (gearRatio partNumbers) rowGears | (rowGears, partNumbers) <- zip gears partNumberGroups]
+  -- let validParts = concat $ [partsInRowGroup symbols rowGroup rowPartNumbers | (rowGroup, rowPartNumbers) <- zip rowGroups partNumbers]
+  --print $ sum [number x | x <- validParts]
