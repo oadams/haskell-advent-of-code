@@ -40,18 +40,14 @@ parseMapLines mapType (l:ls)
           | null l' = []
           | otherwise = [read x | x <- words l'] : parseMapLines' ls'
 
-data MapRow = MapRow { sourceNum :: Int, destNum :: Int, rangeLen :: Int} deriving (Show, Eq, Ord)
+data MapRow = MapRow { sourceLow :: Int, sourceHigh :: Int, destLow :: Int, destHigh :: Int, rangeLen :: Int} deriving (Show, Eq, Ord)
 
 parseMap :: MapType -> [String] -> [MapRow]
-parseMap mapType ls = [MapRow { destNum = x !! 0, sourceNum = x !! 1, rangeLen = x !! 2} | x <- mapLines]
+parseMap mapType ls = [MapRow { destLow = x !! 0, destHigh = (x !! 0) + (x !! 2) - 1,
+                                sourceLow = x !! 1, sourceHigh = (x !! 1) + (x !! 2) - 1,
+                                rangeLen = x !! 2} | x <- mapLines]
   where
     mapLines = parseMapLines mapType ls
-
-runMap :: [MapRow] -> Int -> Int
-runMap [] x = x
-runMap (m:ms) x
-  | x >= sourceNum m && x < sourceNum m + rangeLen m = destNum m + x - sourceNum m
-  | otherwise = runMap ms x
 
 data Beam = Beam { low :: Int, high :: Int} deriving (Show, Eq, Ord)
 
@@ -60,27 +56,27 @@ translateBeams :: [MapRow] -> [Beam] ->  [Beam]
 translateBeams _ [] = []
 translateBeams [] beams = beams
 translateBeams (m:ms) (b:bs)
-    | low b >= sourceNum m + rangeLen m = translateBeams ms (b:bs) -- Assuming input beams are sorted, then none will hit this map row
-    | high b < sourceNum m = b : translateBeams (m:ms) bs -- Pass b through unchanged
+    | low b > sourceHigh m = translateBeams ms (b:bs) -- Assuming input beams are sorted, then none will hit this map row
+    | high b < sourceLow m = b : translateBeams (m:ms) bs -- Pass b through unchanged
     | otherwise = outBeams ++ translateBeams (m:ms) (residualBeams ++ bs)
       where
         (residualBeams, outBeams) = translateBeam b m
         translateBeam :: Beam -> MapRow -> ([Beam], [Beam])
         translateBeam b m
-            | low b < sourceNum m && high b < sourceNum m + rangeLen m = 
+            | low b < sourceLow m && high b <= sourceHigh m = 
                 ([],
-                 [Beam { low = low b, high = sourceNum m - 1}, -- TODO: Check for off-by-one issues with the LT/GT signs and rangeLen offsets
-                  Beam { low = destNum m, high = destNum m + high b - sourceNum m}])
-            | low b < sourceNum m && high b >= sourceNum m + rangeLen m = 
-                ([Beam { low = sourceNum m + rangeLen m, high = high b}],
-                 [Beam { low = low b, high = sourceNum m - 1},
-                  Beam { low = destNum m, high = destNum m + rangeLen m - 1}])
-            | low b >= sourceNum m && high b < sourceNum m + rangeLen m =
+                 [Beam { low = low b, high = sourceLow m - 1}, -- TODO: Check for off-by-one issues with the LT/GT signs and rangeLen offsets
+                  Beam { low = destLow m, high = destLow m + high b - sourceLow m}])
+            | low b < sourceLow m && high b > sourceHigh m = 
+                ([Beam { low = sourceHigh m + 1, high = high b}],
+                 [Beam { low = low b, high = sourceLow m - 1},
+                  Beam { low = sourceLow m, high = destHigh m }])
+            | low b >= sourceLow m && high b <= sourceHigh m =
                 ([],
-                 [Beam { low = destNum m + low b - sourceNum m, high = destNum m + high b - sourceNum m}])
-            | low b >= sourceNum m && high b >= sourceNum m + rangeLen m =
-                ([Beam { low = sourceNum m + rangeLen m, high = high b}],
-                 [Beam { low = destNum m + low b - sourceNum m + rangeLen m, high = destNum m + rangeLen m}])
+                 [Beam { low = destLow m + low b - sourceLow m, high = destLow m + high b - sourceLow m}])
+            | low b >= sourceLow m && high b > sourceHigh m =
+                ([Beam { low = sourceHigh m + 1, high = high b}],
+                 [Beam { low = destLow m + low b - sourceLow m, high = destHigh m}])
             | otherwise = error "We shouldn't end up here. Alternative cases should have been handled above."
 
 parseSeedBeams :: [Int] -> [Beam]
