@@ -5,12 +5,12 @@ import Paths_aoc2023 (getDataFileName)
 data Race = Race { time :: Int, distance :: Int } deriving (Show, Eq)
 
 -- Note: This function assumes input strings are formatted correctly and could break otherwise
-parseRaces :: [String] -> [Race]
-parseRaces [timeStr, distanceStr] = [Race (read t) (read d) | (t, d) <- zip times distances]
+parseRace :: [String] -> Race
+parseRace [timeStr, distanceStr] = Race (read t) (read d)
   where
-    times = drop 1 $ words timeStr
-    distances = drop 1 $ words distanceStr
-parseRaces _ = error "invalid input"
+    t = concat $ drop 1 $ words timeStr
+    d = concat $ drop 1 $ words distanceStr
+parseRace _ = error "invalid input"
 
 numWaysToWin :: Race -> Int
 numWaysToWin Race { time = t, distance = d } = length $ filter (> d) possibleDistances
@@ -21,10 +21,10 @@ numWaysToWin Race { time = t, distance = d } = length $ filter (> d) possibleDis
 
 day06 :: IO ()
 day06 = do
-    inputLines <- lines <$> (getDataFileName "day06-input.txt" >>= readFile)
-    let races = parseRaces inputLines
-    print races
-    print $ product $ map numWaysToWin races
+    inputLines <- lines <$> (getDataFileName "day06-toy-input.txt" >>= readFile)
+    let race = parseRace inputLines
+    print race
+    print $ numWaysToWin race
 
 main :: IO ()
 main = day06
