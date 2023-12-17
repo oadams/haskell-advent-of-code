@@ -1,4 +1,4 @@
-module Day05 where
+module Day06 where
 
 import Paths_aoc2023 (getDataFileName)
 
@@ -21,7 +21,7 @@ numWaysToWin Race { time = t, distance = d } = length $ filter (> d) possibleDis
 
 day06 :: IO ()
 day06 = do
-    inputLines <- lines <$> (getDataFileName "day06-toy-input.txt" >>= readFile)
+    inputLines <- lines <$> (getDataFileName "day06-input.txt" >>= readFile)
     let race = parseRace inputLines
     print race
     print $ numWaysToWin race
