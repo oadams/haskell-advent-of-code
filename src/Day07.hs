@@ -5,7 +5,7 @@ import Data.List (nub, group, sort)
 
 data HandType = HighCard | OnePair | TwoPair | ThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind deriving (Show, Eq, Ord)
 
-data Card = Two | Three | Four | Five | Six | Seven | Eight | Nine | T | J | Q | K | A deriving (Eq, Ord)
+data Card = J | Two | Three | Four | Five | Six | Seven | Eight | Nine | T | Q | K | A deriving (Eq, Ord)
 
 instance Show Card where
     show Two = "2"
@@ -51,10 +51,25 @@ determineHandType cards
     | length (nub cards) == 1 = FiveOfAKind
     | otherwise = error "Invalid hand"
 
+determineJokerHandType :: [Card] -> HandType
+determineJokerHandType cards
+    | not $ elem J cards = vanillaHandType
+    | vanillaHandType == HighCard = OnePair
+    | vanillaHandType == OnePair = ThreeOfAKind
+    | vanillaHandType == TwoPair = if numJokers == 1 then FullHouse else FourOfAKind
+    | vanillaHandType == ThreeOfAKind = FourOfAKind
+    | vanillaHandType == FullHouse = FiveOfAKind
+    | vanillaHandType == FourOfAKind = FiveOfAKind
+    | vanillaHandType == FiveOfAKind = FiveOfAKind
+      where
+        vanillaHandType = determineHandType cards
+        numJokers = length $ filter (== J) cards
+
+
 parseHand :: String -> Hand
 parseHand handStr
     | length cards /= 5 = error "Invalid hand"
-    | otherwise = Hand (determineHandType cards) cards
+    | otherwise = Hand (determineJokerHandType cards) cards
     where cards = map parseCard handStr
 
 parseLine :: String -> (Hand, Integer)
@@ -68,6 +83,8 @@ day07 = do
     inputLines <- lines <$> (getDataFileName "day07-input.txt" >>= readFile)
     print inputLines
     let hands = map parseLine inputLines
+    -- print filter (\x -> elem J (handCards x)) $ hands
+    print hands
     print $ sum [bid*i | (i, (_, bid)) <- zip [1..] $ sort hands]
 
 main :: IO ()
