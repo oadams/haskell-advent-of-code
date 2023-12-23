@@ -30,6 +30,7 @@ executable aoc2023
     Day05
     Day06
     Day07
+    Day08
 
   autogen-modules:
     Paths_aoc2023
@@ -38,6 +39,7 @@ executable aoc2023
       base ^>=4.17.2.0
     , text
     , split
+    , containers
     -- -- Package `split`: Functions for splitting lists.
     -- , split ^>=0.2.4
     -- -- Package `containers`: Brings maps, sets, trees, graphs, sequences.

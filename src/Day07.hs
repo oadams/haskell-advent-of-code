@@ -1,4 +1,4 @@
-module Day06 where
+module Day07 where
 
 import Paths_aoc2023 (getDataFileName)
 import Data.List (nub, group, sort)
