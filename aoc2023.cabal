@@ -43,6 +43,7 @@ executable aoc2023
     , text
     , split
     , containers
+    , array
     -- -- Package `split`: Functions for splitting lists.
     -- , split ^>=0.2.4
     -- -- Package `containers`: Brings maps, sets, trees, graphs, sequences.
