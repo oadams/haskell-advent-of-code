@@ -1,7 +1,7 @@
 module Day10 where
 
 import Paths_aoc2023 (getDataFileName)
-import Data.List (intercalate, elemIndex)
+import Data.List (intercalate, elemIndex, nub)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
@@ -44,21 +44,6 @@ getElement (Grid grid) (i, j)
         [] -> 0
         (r:_) -> length r
 
-data Cardinal = North | South | East | West
-
-{-
-chooseNextTiles' :: Grid -> (Int, Int) -> Cardinal -> Maybe (Int, Int)
-chooseNextTiles' grid curLoc North
-    | c `elem` ['|', 'F', '7', 'S'] = Just (i-1, j)
-    | otherwise = Nothing
-      where c = getElement grid (i-1, j)
--}
-
-
--- getNextTiles' :: Grid -> (Int, Int) -> [(Int, Int)]
--- getNextTiles grid curLoc
-
--- Need to change these checks so that the character on the current tile is considered too!
 chooseNextTiles :: Grid -> (Int, Int) -> [(Int, Int)]
 chooseNextTiles grid (i, j) = concat [checkNorth, checkSouth, checkEast, checkWest]
   where
@@ -84,25 +69,7 @@ chooseNextTiles grid (i, j) = concat [checkNorth, checkSouth, checkEast, checkWe
             Just c -> if (c `elem` ['-', 'L', 'F', 'S']) && (cur `elem` ['-', 'J', '7', 'S']) then [(i, j-1)] else []
             Nothing -> []
 
--- There can only be one loop, so I don't even need to do BFS, I can just keep
--- track of cur and prev and iterate around the loop until I'm back at the Start,
--- keeping track of the distance and then halving it.
-{-
-loopDistance :: Grid -> Int
-loopDistance grid = loopDistance' 0 start (head $ chooseNextTiles grid start)
-  where
-    start = findStart grid
-    loopDistance' :: Int -> (Int, Int) -> (Int, Int) -> Int
-    loopDistance' distance cur next
-        | getElement grid next == Just 'S' = distance + 1
-        | otherwise = loopDistance' (distance + 1) cur' next'
-          where 
-            cur' = next
-            next' = head [tile | tile <- chooseNextTiles grid next, tile /= cur]
--}
-
--- Oh, no you do need to do BFS because you can still go down garden paths that don't become loops
-
+-- Need to turn this into a depth-first search. Oh, but then I can't do distance.
 bfsDistance :: Grid -> Int
 bfsDistance grid = bfsDistance' 0 initPrevTiles [findStart grid] initVisited
   where
@@ -110,37 +77,18 @@ bfsDistance grid = bfsDistance' 0 initPrevTiles [findStart grid] initVisited
     initPrevTiles = []
     bfsDistance' :: Int -> [(Int, Int)] -> [(Int, Int)] -> Set (Int, Int) -> Int
     bfsDistance' distance prevTiles tiles visited
-        | any (`elem` visited) tiles /= all (`elem` visited) tiles = error ("Wrong assumption.\n" <> show visited <> "\n" <> show tiles)
-        | all (`elem` visited) tiles = distance
+        -- | any (`elem` visited) tiles /= all (`elem` visited) tiles = error ("Wrong assumption.\n" <> show visited <> "\n" <> show tiles <> "\nstatement: " <> (show $ all (`elem` visited) tiles))
+        | ((length . nub) tiles == 1) && (length tiles > 1) = distance
+        | any (`elem` visited) tiles = distance
         | otherwise = trace ("------\nprevTiles: " <> show prevTiles <> "\ntiles: " <> show tiles <> "\nvisited: " <> show visited) bfsDistance' (distance + 1) prevTiles' nextTiles visited'
           where
             nextTiles = filter (`notElem` prevTiles) $ concat [chooseNextTiles grid tile | tile <- tiles]
             prevTiles' = tiles 
             visited' = visited `S.union` S.fromList tiles
 
-
-
-
-{-
-Idea:
-- Parse in the map
-- BFS until there's nothing left to explore
-- When you find a node you've already visited, store the count at that loop juncture.
-- Need to handle race conditions though.
--}
-
-{-
-bfsDistance :: Map String (String, String) -> Set String -> Integer -> String -> Maybe Integer
-bfsDistance graph visited distance cur
-    | size visited == size graph = Nothing
-    | cur == ""
--}
-
-
-
 day10 :: IO ()
 day10 = do
-    inputLines <- lines <$> (getDataFileName "day10-toy-input-2.txt" >>= readFile)
+    inputLines <- lines <$> (getDataFileName "day10-input.txt" >>= readFile)
     let grid = buildGrid inputLines
     print grid
     -- print $ chooseNextTiles grid $ findStart grid
